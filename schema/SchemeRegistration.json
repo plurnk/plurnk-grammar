@@ -20,6 +20,24 @@
             "pattern": "^[a-z][a-z0-9_-]*$",
             "description": "Channel name selected when an op against this scheme has no fragment. Conventionally `body`; exec schemes typically declare `stdout`."
         },
+        "channel_previews": {
+            "type": "object",
+            "description": "Per-channel preview policy for index tile rendering. Keys are channel names; values declare how much of each channel to surface in the index and from which end. Channels not listed here render under engine defaults (head, PLURNK_ENTRY_SIZE_DEFAULT_TOKENS). Streaming/temporal channels (SSE events, exec stdout, log tails) should declare `tail`; static-document channels (`body` of `known://`, `wiki://`) should declare `head`; small whole-content channels (`headers`, `symbols`) can declare `both`.",
+            "propertyNames": { "pattern": "^[a-z][a-z0-9_-]*$" },
+            "additionalProperties": {
+                "type": "object",
+                "required": ["orientation"],
+                "additionalProperties": false,
+                "properties": {
+                    "orientation": { "enum": ["head", "tail", "both"] },
+                    "default_size_tokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Tokens to render per side. When omitted, the engine uses PLURNK_ENTRY_SIZE_DEFAULT_TOKENS."
+                    }
+                }
+            }
+        },
         "writable_by": {
             "type": "array",
             "items": { "enum": ["model", "client", "system", "plugin"] },

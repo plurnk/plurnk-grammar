@@ -186,6 +186,72 @@ test("Validator: SchemeRegistration rejects unknown writable_by tier", () => {
     assert.equal(valid, false);
 });
 
+test("Validator: SchemeRegistration accepts channel_previews with head + tail orientations", () => {
+    const reg = {
+        ...minimalSchemeReg(),
+        name: "sse",
+        channel_previews: {
+            event: { orientation: "tail" },
+            data: { orientation: "tail", default_size_tokens: 512 },
+            headers: { orientation: "head", default_size_tokens: 128 },
+        },
+    };
+    const { valid, errors } = Validator.validateSchemeRegistration(reg);
+    assert.equal(valid, true, JSON.stringify(errors));
+});
+
+test("Validator: SchemeRegistration accepts channel_previews with both orientation", () => {
+    const reg = {
+        ...minimalSchemeReg(),
+        channel_previews: { symbols: { orientation: "both" } },
+    };
+    const { valid, errors } = Validator.validateSchemeRegistration(reg);
+    assert.equal(valid, true, JSON.stringify(errors));
+});
+
+test("Validator: SchemeRegistration rejects channel_previews with unknown orientation", () => {
+    const reg = {
+        ...minimalSchemeReg(),
+        channel_previews: { body: { orientation: "middle" } },
+    };
+    const { valid } = Validator.validateSchemeRegistration(reg);
+    assert.equal(valid, false);
+});
+
+test("Validator: SchemeRegistration rejects channel_previews missing orientation", () => {
+    const reg = {
+        ...minimalSchemeReg(),
+        channel_previews: { body: { default_size_tokens: 256 } },
+    };
+    const { valid } = Validator.validateSchemeRegistration(reg);
+    assert.equal(valid, false);
+});
+
+test("Validator: SchemeRegistration rejects channel_previews with uppercase channel key", () => {
+    const reg = {
+        ...minimalSchemeReg(),
+        channel_previews: { Body: { orientation: "head" } },
+    };
+    const { valid } = Validator.validateSchemeRegistration(reg);
+    assert.equal(valid, false);
+});
+
+test("Validator: SchemeRegistration rejects channel_previews entry with extra property", () => {
+    const reg = {
+        ...minimalSchemeReg(),
+        channel_previews: { body: { orientation: "head", color: "blue" } },
+    };
+    const { valid } = Validator.validateSchemeRegistration(reg);
+    assert.equal(valid, false);
+});
+
+test("Validator: SchemeRegistration accepts row with no channel_previews (field optional)", () => {
+    const reg: any = { ...minimalSchemeReg() };
+    delete reg.channel_previews;
+    const { valid, errors } = Validator.validateSchemeRegistration(reg);
+    assert.equal(valid, true, JSON.stringify(errors));
+});
+
 // -------------------------------------------------------------------------
 // ProviderDeclaration
 // -------------------------------------------------------------------------

@@ -20,11 +20,11 @@ Slots between `<<OPsuffix` and `:body:` are all optional. `:body:` fences are re
 | COPY | apply tags    | required | lines `N-M`      | destination URI          |
 | MOVE | apply tags    | required | lines `N-M`      | destination URI          |
 | SHOW | filter tags   | required | results `N-M`    | matcher                  |
-| HIDE | filter tags   | required | results `N-M`    | matcher                  |
+| HIDE | filter tags OR status code | required | results `N-M` | matcher       |
 | SEND | HTTP status   | recipient | —               | message (JSON for data)  |
 | EXEC | Runtime Tag   | cwd       | —               | command or code          |
 
-SEND signal is a single integer. EXEC signal is a single Runtime Tag (`sh`, `node`, `python`, etc.). All other signals are CSV.
+SEND signal is a single integer. EXEC signal is a single Runtime Tag (`sh`, `node`, `python`, etc.). HIDE signal is either a CSV tag filter (`[france,geography]` — archive by filter) OR a single integer status code (`[499]` — explicit subscription cancel: archive AND tear down the live connection). All other signals are CSV tags.
 
 ## `<L>`
 
@@ -95,6 +95,7 @@ quoted: <<EDIT(known://inner):hello:EDIT
 <<MOVE(known://draft):known://final/answer:MOVE
 <<SHOW[france](known://countries/**):Paris*:SHOW
 <<HIDE(log://**/get)<101-200>::HIDE
+<<HIDE[499](sse://feed/x)::HIDE
 <<FIND(log://**/error):/timeout|deadline exceeded/i:FIND
 <<EXEC[node](./):
 const sum = [1, 2, 3].reduce((a, b) => a + b, 0);

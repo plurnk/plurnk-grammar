@@ -842,3 +842,81 @@ test("SEND/EXEC: <L> slot is rejected (not just unused)", () => {
     const r2 = PlurnkParser.parse("<<EXEC[node]<1>(./):cmd:EXEC");
     assert.ok(r2.items.filter((i) => i.kind === "error").length >= 1);
 });
+
+// -------------------------------------------------------------------------
+// HIDE signal dispatch — integer (cancel) vs tag filter
+// -------------------------------------------------------------------------
+
+test("HIDE with integer signal — explicit subscription cancel", () => {
+    const result = PlurnkParser.parse("<<HIDE[499](sse://feed/x)::HIDE");
+    assert.equal(result.items.length, 1);
+    const item = result.items[0];
+    if (item.kind !== "statement" || item.statement.op !== "HIDE") { assert.fail("not HIDE"); return; }
+    assert.equal(item.statement.signal, 499);
+    assert.equal(item.statement.path?.kind, "url");
+});
+
+test("HIDE with negative integer signal", () => {
+    const result = PlurnkParser.parse("<<HIDE[-1](path)::HIDE");
+    assert.equal(result.items.length, 1);
+    const item = result.items[0];
+    if (item.kind !== "statement" || item.statement.op !== "HIDE") { assert.fail("not HIDE"); return; }
+    assert.equal(item.statement.signal, -1);
+});
+
+test("HIDE with tag-filter signal — existing archive-by-filter behavior", () => {
+    const result = PlurnkParser.parse("<<HIDE[france,geography](known://**)::HIDE");
+    assert.equal(result.items.length, 1);
+    const item = result.items[0];
+    if (item.kind !== "statement" || item.statement.op !== "HIDE") { assert.fail("not HIDE"); return; }
+    assert.deepEqual(item.statement.signal, ["france", "geography"]);
+});
+
+test("HIDE with single tag signal", () => {
+    const result = PlurnkParser.parse("<<HIDE[france](known://countries/**)::HIDE");
+    assert.equal(result.items.length, 1);
+    const item = result.items[0];
+    if (item.kind !== "statement" || item.statement.op !== "HIDE") { assert.fail("not HIDE"); return; }
+    assert.deepEqual(item.statement.signal, ["france"]);
+});
+
+test("HIDE with no signal slot — null signal", () => {
+    const result = PlurnkParser.parse("<<HIDE(sse://feed/x)::HIDE");
+    assert.equal(result.items.length, 1);
+    const item = result.items[0];
+    if (item.kind !== "statement" || item.statement.op !== "HIDE") { assert.fail("not HIDE"); return; }
+    assert.equal(item.statement.signal, null);
+});
+
+test("HIDE with empty brackets — null signal (parsed as empty intSignal)", () => {
+    const result = PlurnkParser.parse("<<HIDE[](path)::HIDE");
+    assert.equal(result.items.length, 1);
+    const item = result.items[0];
+    if (item.kind !== "statement" || item.statement.op !== "HIDE") { assert.fail("not HIDE"); return; }
+    assert.equal(item.statement.signal, null);
+});
+
+test("HIDE rejects mixed int and tag in signal slot", () => {
+    const result = PlurnkParser.parse("<<HIDE[499,foo](path)::HIDE");
+    const errors = result.items.filter((i) => i.kind === "error");
+    assert.ok(errors.length >= 1, "expected parse error on mixed int + tag signal");
+});
+
+test("HIDE integer signal — slot permutation: path before signal", () => {
+    const result = PlurnkParser.parse("<<HIDE(sse://feed)[499]::HIDE");
+    assert.equal(result.items.length, 1);
+    const item = result.items[0];
+    if (item.kind !== "statement" || item.statement.op !== "HIDE") { assert.fail("not HIDE"); return; }
+    assert.equal(item.statement.signal, 499);
+});
+
+test("HIDE integer signal with line marker — pagination + cancel intent rejected? confirm coexistence", () => {
+    // HIDE accepts <L> per the grammar — pagination is meaningful when archiving by filter.
+    // Integer signal + <L> together is unusual but grammar-permitted; confirm it parses.
+    const result = PlurnkParser.parse("<<HIDE[499](sse://feed)<1-10>::HIDE");
+    assert.equal(result.items.length, 1);
+    const item = result.items[0];
+    if (item.kind !== "statement" || item.statement.op !== "HIDE") { assert.fail("not HIDE"); return; }
+    assert.equal(item.statement.signal, 499);
+    assert.deepEqual(item.statement.lineMarker, { first: 1, last: 10 });
+});

@@ -36,6 +36,21 @@ test("PlurnkStatement: HIDE with jsonpath matcher", () => {
     assert.equal(r!.valid, true, JSON.stringify(r!.errors));
 });
 
+test("PlurnkStatement: HIDE with tag-filter signal (string array)", () => {
+    const r = validateRoundTrip("<<HIDE[france,geography](known://**)::HIDE");
+    assert.equal(r!.valid, true, JSON.stringify(r!.errors));
+});
+
+test("PlurnkStatement: HIDE with integer signal — subscription cancel intent", () => {
+    const r = validateRoundTrip("<<HIDE[499](sse://feed/x)::HIDE");
+    assert.equal(r!.valid, true, JSON.stringify(r!.errors));
+});
+
+test("PlurnkStatement: HIDE with negative integer signal validates", () => {
+    const r = validateRoundTrip("<<HIDE[-1](path)::HIDE");
+    assert.equal(r!.valid, true, JSON.stringify(r!.errors));
+});
+
 test("PlurnkStatement: EDIT with raw markdown body", () => {
     const r = validateRoundTrip("<<EDIT[philosophy](known://meaning):The meaning of life is 42:EDIT");
     assert.equal(r!.valid, true, JSON.stringify(r!.errors));

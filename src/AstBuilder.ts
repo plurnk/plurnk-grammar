@@ -25,6 +25,7 @@ import type {
     ExecModifiersContext,
     ExecStatementContext,
     FindStatementContext,
+    HideOpModifiersContext,
     HideStatementContext,
     MoveStatementContext,
     ReadStatementContext,
@@ -51,6 +52,7 @@ declare module "xpath" {
 type Ctor<T> = new (...args: any[]) => T;
 
 type TagSlots = { signal: string[] | null; path: ParsedPath | null; lineMarker: LineMarker | null };
+type HideSlots = { signal: string[] | number | null; path: ParsedPath | null; lineMarker: LineMarker | null };
 type SendSlots = { signal: number | null; path: ParsedPath | null };
 type ExecSlots = { signal: string | null; path: ParsedPath | null };
 
@@ -111,7 +113,7 @@ export default class AstBuilder {
 
     static #buildHide(ctx: HideStatementContext): HideStatement {
         const position = AstBuilder.#positionOf(ctx);
-        const slots = AstBuilder.#extractTagSlots(ctx.tagOpModifiers(), position);
+        const slots = AstBuilder.#extractHideSlots(ctx.hideOpModifiers(), position);
         const raw = AstBuilder.#bodyTextOf(ctx);
         return {
             op: "HIDE",
@@ -188,6 +190,23 @@ export default class AstBuilder {
     }
 
     static #extractTagSlots(modCtx: TagOpModifiersContext | null, pos: Position): TagSlots {
+        return {
+            signal: AstBuilder.#tagsFromSignal(AstBuilder.#findFirst(modCtx, TagSignalContext)),
+            path: AstBuilder.#pathFromCtx(AstBuilder.#findFirst(modCtx, PathContext), pos),
+            lineMarker: AstBuilder.#lineMarkerFromCtx(AstBuilder.#findFirst(modCtx, LineMarkerContext)),
+        };
+    }
+
+    static #extractHideSlots(modCtx: HideOpModifiersContext | null, pos: Position): HideSlots {
+        const intCtx = AstBuilder.#findFirst(modCtx, IntSignalContext);
+        if (intCtx !== null) {
+            const intNode = intCtx.INT();
+            return {
+                signal: intNode !== null ? Number.parseInt(intNode.getText(), 10) : null,
+                path: AstBuilder.#pathFromCtx(AstBuilder.#findFirst(modCtx, PathContext), pos),
+                lineMarker: AstBuilder.#lineMarkerFromCtx(AstBuilder.#findFirst(modCtx, LineMarkerContext)),
+            };
+        }
         return {
             signal: AstBuilder.#tagsFromSignal(AstBuilder.#findFirst(modCtx, TagSignalContext)),
             path: AstBuilder.#pathFromCtx(AstBuilder.#findFirst(modCtx, PathContext), pos),

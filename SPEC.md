@@ -119,7 +119,7 @@ All other restrictions are runtime concerns, not grammar concerns.
 | COPY   | tags to apply (CSV) | required | destination URI       | entry lines |
 | MOVE   | tags to apply (CSV) | required | destination URI       | entry lines |
 | SHOW   | tag filter (CSV)  | required | optional pattern matcher | result-set pagination |
-| HIDE   | tag filter (CSV)  | required | optional pattern matcher | result-set pagination |
+| HIDE   | tag filter (CSV) OR status code (single integer) | required | optional pattern matcher | result-set pagination |
 | SEND   | HTTP status code (single integer) | optional | message payload (JSON by convention for structured responses) | not applicable |
 | EXEC   | runtime tag (single string; `sh` default, `node`, `python`, …) | required | command or code snippet | not applicable |
 
@@ -140,6 +140,16 @@ EDIT line-marker semantics (single source of authority):
 SHOW and HIDE filters are AND-combined: an entry is selected when its
 path matches `(path)`, its tags satisfy `[signal]` (if present), and its
 content matches `body` (if present).
+
+HIDE accepts an alternate signal form for explicit subscription cancellation:
+when `[signal]` is a single integer status code (rather than a CSV tag
+filter), the integer is interpreted as cancel intent — the most useful
+value is `499` (Client Closed Request), which means "archive AND tear
+down the live connection feeding this entry's active channel(s)." Tag-
+filter HIDE archives without disturbing any underlying stream. The two
+forms are distinguished syntactically: digits-only inside the brackets
+parses as an integer; anything else is a tag filter. Mixing (`[499,foo]`)
+fails to parse.
 
 ### Per-OP Output (what each OP produces)
 
@@ -509,14 +519,15 @@ interface SendBody {
     json: unknown | null;    // parsed value if body is valid JSON, else null
 }
 
-// Each variant declares its own body type. Tag-bearing OPs share signal=string[];
-// SEND uses number; EXEC uses string.
+// Each variant declares its own body type. FIND/READ/EDIT/COPY/MOVE/SHOW share
+// signal=string[]; HIDE widens to string[] | number (integer status code for
+// subscription cancel intent); SEND uses number; EXEC uses string.
 
 // Matcher OPs — body is a typed pattern matcher.
 interface FindStatement extends StatementBase<string[]> { op: "FIND"; body: MatcherBody | null; }
 interface ReadStatement extends StatementBase<string[]> { op: "READ"; body: MatcherBody | null; }
 interface ShowStatement extends StatementBase<string[]> { op: "SHOW"; body: MatcherBody | null; }
-interface HideStatement extends StatementBase<string[]> { op: "HIDE"; body: MatcherBody | null; }
+interface HideStatement extends StatementBase<string[] | number> { op: "HIDE"; body: MatcherBody | null; }
 
 // EDIT — body is arbitrary content (markdown, code, prose). Raw.
 interface EditStatement extends StatementBase<string[]> { op: "EDIT"; body: string | null; }

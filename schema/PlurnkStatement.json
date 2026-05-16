@@ -97,7 +97,14 @@
             "properties": {
                 "op": { "const": "HIDE" },
                 "suffix": { "type": "string" },
-                "signal": { "$ref": "#/$defs/TagSignal" },
+                "signal": {
+                    "oneOf": [
+                        { "type": "array", "items": { "type": "string" } },
+                        { "type": "number" },
+                        { "type": "null" }
+                    ],
+                    "description": "Tag filter (string array) for archive-by-filter, OR an integer status code for explicit subscription cancellation (`499` = client closed request — tears down the active connection in addition to archiving). Null when the signal slot is absent."
+                },
                 "path": { "$ref": "#/$defs/PathOrNull" },
                 "lineMarker": { "$ref": "#/$defs/LineMarkerOrNull" },
                 "body": { "$ref": "#/$defs/MatcherBodyOrNull" },

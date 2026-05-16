@@ -71,6 +71,7 @@ private isOpKeywordAfterLtLt(): boolean {
 
 private isSendOp(): boolean { return this.openTag.startsWith("SEND"); }
 private isExecOp(): boolean { return this.openTag.startsWith("EXEC"); }
+private isHideOp(): boolean { return this.openTag.startsWith("HIDE"); }
 }
 
 // ============================================================================
@@ -105,9 +106,10 @@ TEXT : ('<<' { !this.isOpKeywordAfterLtLt() }? | '<' ~[<] | ~[<])+ ;
 
 mode SLOTS;
 SLOTS_WS       : [ \t\r\n]+ -> skip ;
-SLOTS_LB_TAGS  : '[' { !this.isSendOp() && !this.isExecOp() }? -> type(LBRACKET), mode(SIGNAL_TAGS) ;
-SLOTS_LB_INT   : '[' { this.isSendOp() }?                       -> type(LBRACKET), mode(SIGNAL_INT) ;
-SLOTS_LB_IDENT : '[' { this.isExecOp() }?                       -> type(LBRACKET), mode(SIGNAL_IDENT) ;
+SLOTS_LB_HIDE  : '[' { this.isHideOp() }?                                              -> type(LBRACKET), mode(SIGNAL_HIDE) ;
+SLOTS_LB_TAGS  : '[' { !this.isSendOp() && !this.isExecOp() && !this.isHideOp() }?     -> type(LBRACKET), mode(SIGNAL_TAGS) ;
+SLOTS_LB_INT   : '[' { this.isSendOp() }?                                              -> type(LBRACKET), mode(SIGNAL_INT) ;
+SLOTS_LB_IDENT : '[' { this.isExecOp() }?                                              -> type(LBRACKET), mode(SIGNAL_IDENT) ;
 SLOTS_LPAREN   : '(' -> type(LPAREN), mode(PATH) ;
 SLOTS_L        : L_PATTERN -> type(L_MARKER) ;
 SLOTS_COLON    : ':' -> type(COLON), mode(BODY) ;
@@ -143,6 +145,22 @@ mode SIGNAL_IDENT;
 SD_WS    : [ \t]+ -> skip ;
 SD_IDENT : [a-zA-Z_] [a-zA-Z0-9_.\-+]* -> type(IDENT) ;
 SD_END   : ']' -> type(RBRACKET), mode(SLOTS) ;
+
+// ============================================================================
+// SIGNAL_HIDE — inside `[...]` for HIDE. Accepts either a single integer
+// status code (cancel-intent: `[499]` tears down the subscription) or a tag
+// filter (existing behavior: `[france,geography]` filters which entries to
+// archive). INT is listed before TAG so a pure-digit signal lexes as INT;
+// non-digit signals fall through to TAG. Mixed `[499,foo]` will lex as
+// INT, COMMA, TAG and fail in the parser — that's intentional.
+// ============================================================================
+
+mode SIGNAL_HIDE;
+SHIDE_WS    : [ \t]+ -> skip ;
+SHIDE_COMMA : ',' -> type(COMMA) ;
+SHIDE_INT   : '-'? [0-9]+ -> type(INT) ;
+SHIDE_TAG   : (~[\],<\r\n \t] | '<' ~[\],<\r\n \t])+ -> type(TAG) ;
+SHIDE_END   : ']' -> type(RBRACKET), mode(SLOTS) ;
 
 // ============================================================================
 // PATH — inside `(...)`. Content kept as opaque PATH_TEXT; WHATWG URL parsing

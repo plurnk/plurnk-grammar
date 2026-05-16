@@ -4,11 +4,15 @@
     "title": "ChannelContent",
     "description": "One named stream of content on an entry. Channels carry distinct, parallel views of an entry (e.g. `stdout` and `stderr` on `exec://`; `body` and `headers` on `https://`; `body` and `symbols` on a code file). Each channel has its own content bytes, mimetype, and token count.",
     "type": "object",
-    "required": ["content", "mimetype", "tokens"],
+    "required": ["content", "mimetype", "tokens", "state"],
     "additionalProperties": false,
     "properties": {
         "content": { "type": "string", "description": "Raw content bytes/string for this channel. Binary content awaits a future encoding pass (see AGENTS.md)." },
         "mimetype": { "type": "string", "minLength": 1 },
-        "tokens": { "type": "integer", "minimum": 0, "description": "Token count of `content` under the active model's tokenizer." }
+        "tokens": { "type": "integer", "minimum": 0, "description": "Token count of `content` under the active model's tokenizer." },
+        "state": {
+            "enum": ["static", "active", "closed", "errored"],
+            "description": "Lifecycle of this channel. `static` for one-shot content (READ of a known entry, etc.); `active` while a live subscription is appending; `closed` after a graceful upstream close or model-initiated HIDE[499]; `errored` after a fault. Index renderers may show a live-dot for `active`; engine uses this plus the per-channel AbortController to know which subscriptions are still bound."
+        }
     }
 }

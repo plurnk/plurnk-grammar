@@ -34,7 +34,7 @@ const entry = () => ({
     username: null, password: null, hostname: "philosophy", port: null,
     pathname: "/meaning", params: {},
     channels: {
-        body: { content: "The meaning of life is 42.", mimetype: "text/markdown", tokens: 10 },
+        body: { content: "The meaning of life is 42.", mimetype: "text/markdown", tokens: 10, state: "static" },
     },
     attributes: {},
     tags: ["philosophy"],

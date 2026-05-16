@@ -19,7 +19,7 @@ const minimalAgentEntry = () => ({
     pathname: "",
     params: {},
     channels: {
-        body: { content: "Paris is the capital of France.", mimetype: "text/markdown", tokens: 9 },
+        body: { content: "Paris is the capital of France.", mimetype: "text/markdown", tokens: 9, state: "static" },
     },
     attributes: {},
     tags: ["wikipedia", "geography"],
@@ -79,8 +79,8 @@ test("Validator: Entry accepts multi-channel exec-style row", () => {
         scheme: "exec",
         hostname: "run-tests",
         channels: {
-            stdout: { content: "ok\n", mimetype: "text/plain", tokens: 1 },
-            stderr: { content: "warning: deprecated\n", mimetype: "text/plain", tokens: 3 },
+            stdout: { content: "ok\n", mimetype: "text/plain", tokens: 1, state: "static" },
+            stderr: { content: "warning: deprecated\n", mimetype: "text/plain", tokens: 3, state: "static" },
         },
     };
     const { valid, errors } = Validator.validateEntry(entry);
@@ -89,7 +89,7 @@ test("Validator: Entry accepts multi-channel exec-style row", () => {
 
 test("Validator: Entry rejects channel name with uppercase", () => {
     const entry: any = minimalAgentEntry();
-    entry.channels = { Body: { content: "x", mimetype: "text/plain", tokens: 0 } };
+    entry.channels = { Body: { content: "x", mimetype: "text/plain", tokens: 0, state: "static" } };
     const { valid } = Validator.validateEntry(entry);
     assert.equal(valid, false);
 });
@@ -99,6 +99,29 @@ test("Validator: Entry rejects channel with missing mimetype", () => {
     entry.channels = { body: { content: "x", tokens: 0 } };
     const { valid } = Validator.validateEntry(entry);
     assert.equal(valid, false);
+});
+
+test("Validator: Entry rejects channel with missing state", () => {
+    const entry: any = minimalAgentEntry();
+    entry.channels = { body: { content: "x", mimetype: "text/plain", tokens: 0 } };
+    const { valid } = Validator.validateEntry(entry);
+    assert.equal(valid, false);
+});
+
+test("Validator: Entry rejects channel with unknown state value", () => {
+    const entry: any = minimalAgentEntry();
+    entry.channels = { body: { content: "x", mimetype: "text/plain", tokens: 0, state: "draining" } };
+    const { valid } = Validator.validateEntry(entry);
+    assert.equal(valid, false);
+});
+
+test("Validator: Entry accepts each ChannelContent.state lifecycle value", () => {
+    for (const state of ["static", "active", "closed", "errored"]) {
+        const entry: any = minimalAgentEntry();
+        entry.channels = { body: { content: "x", mimetype: "text/plain", tokens: 0, state } };
+        const { valid, errors } = Validator.validateEntry(entry);
+        assert.equal(valid, true, `${state}: ${JSON.stringify(errors)}`);
+    }
 });
 
 test("Validator: Entry rejects port > 65535", () => {
@@ -416,7 +439,7 @@ test("Validator: Entry params via $ref to Params.json validates multi-value", ()
         pathname: "/api",
         params: { q: ["a", "b"], page: "2" },
         channels: {
-            body: { content: "", mimetype: "application/json", tokens: 0 },
+            body: { content: "", mimetype: "application/json", tokens: 0, state: "static" },
         },
         attributes: {},
         tags: [],

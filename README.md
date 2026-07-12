@@ -1,3 +1,5 @@
+> **ABSORBED into the plurnk platform monorepo** — code, history, and issues now live in [`plurnk/plurnk-service`](https://github.com/plurnk/plurnk-service) under `plurnk-grammar/`. This repo is an archived snapshot.
+
 # plurnk-grammar
 
 Parser for the Plurnk protocol — a HEREDOC-style DSL for LLM agents.
